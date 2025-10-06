@@ -87,12 +87,11 @@ def gerar_graficos_4a_e_4b(df_completo, mapeamento_genero):
     for container in plt.gca().containers:
         plt.gca().bar_label(container, fmt='%.1f%%', label_type='center', color='white', fontsize=10, fontweight='bold')
     plt.tight_layout(); plt.savefig('grafico_4b_comparativo_proporcao.png'); plt.show()
-
 # --- FUNÇÃO DE ANÁLISE GEOGRÁFICA (IMPLEMENTADA) ---
 def executar_analise_geografica(df_crimes):
     """
-    Gera um mapa interativo com camadas para Municípios e AIS,
-    lendo arquivos geográficos locais e gerando a geometria das AIS.
+    Gera mapas interativos individuais para cada tipo de crime,
+    separados por Municípios e AIS.
     """
     print("\nIniciando Análise Geográfica (Municípios e AIS)...")
     print("="*60)
@@ -135,7 +134,7 @@ def executar_analise_geografica(df_crimes):
         'Acarape': 'AIS 15', 'Aracoiaba': 'AIS 15', 'Aratuba': 'AIS 15', 'Barreira': 'AIS 15', 'Baturité': 'AIS 15', 'Boa Viagem': 'AIS 15', 'Canindé': 'AIS 15', 'Capistrano': 'AIS 15', 'Caridade': 'AIS 15', 'Guaramiranga': 'AIS 15', 'Itapiúna': 'AIS 15', 'Itatira': 'AIS 15', 'Madalena': 'AIS 15', 'Mulungu': 'AIS 15', 'Ocara': 'AIS 15', 'Pacoti': 'AIS 15', 'Palmácia': 'AIS 15', 'Paramoti': 'AIS 15', 'Redenção': 'AIS 15',
         'Ararendá': 'AIS 16', 'Catunda': 'AIS 16', 'Crateús': 'AIS 16', 'Hidrolândia': 'AIS 16', 'Independência': 'AIS 16', 'Ipaporanga': 'AIS 16', 'Ipu': 'AIS 16', 'Ipueiras': 'AIS 16', 'Monsenhor Tabosa': 'AIS 16', 'Nova Russas': 'AIS 16', 'Novo Oriente': 'AIS 16', 'Pires Ferreira': 'AIS 16', 'Poranga': 'AIS 16', 'Reriutaba': 'AIS 16', 'Santa Quitéria': 'AIS 16', 'Tamboril': 'AIS 16', 'Varjota': 'AIS 16',
         'Acaraú': 'AIS 17', 'Amontada': 'AIS 17', 'Apuiarés': 'AIS 17', 'Bela Cruz': 'AIS 17', 'Cruz': 'AIS 17', 'General Sampaio': 'AIS 17', 'Irauçuba': 'AIS 17', 'Itapajé': 'AIS 17', 'Itapipoca': 'AIS 17', 'Itarema': 'AIS 17', 'Jijoca de Jericoacoara': 'AIS 17', 'Marco': 'AIS 17', 'Miraíma': 'AIS 17', 'Morrinhos': 'AIS 17', 'Pentecoste': 'AIS 17', 'Tejuçuoca': 'AIS 17', 'Tururu': 'AIS 17', 'Umirim': 'AIS 17', 'Uruburetama': 'AIS 17',
-        'Alto Santo': 'AIS 18', 'Aracati': 'AIS 18', 'Beberibe': 'AIS 18', 'Ererê': 'AIS 18', 'Fortim': 'AIS 18', 'Icapuí': 'AIS 18', 'Iracema': 'AIS 18', 'Itaiçaba': 'AIS 18', 'Jaguaribe': 'AIS 18', 'Jaguaruana': 'AIS 18', 'Limoeiro do Norte': 'AIS 18', 'Nova Jaguaribara': 'AIS 18', 'Palhano': 'AIS 18', 'Pereiro': 'AIS 18', 'Potiretama': 'AIS 18', 'Quixeré': 'AIS 18', 'Russas': 'AIS 18', 'São João do Jaguaribe': 'AIS 18', 'Tabuleiro do Norte': 'AIS 18',
+        'Alto Santo': 'AIS 18', 'Aracati': 'AIS 18', 'Beberibe': 'AIS 18', 'Ererê': 'AIS 18', 'Fortim': 'AIS 18', 'Icapuí': 'AIS 18', 'Iracema': 'AIS 18', 'Itaiçaba': 'AIS 18', 'Jaguaribe': 'AIS 18', 'Jaguaruana': 'AIS 18', 'Limoeiro do Norte': 'AIS 18', 'Nova Jaguaribara': 'AIS 18', 'Palhano': 'AIS 18', 'Pereiro': 'AIS 18', 'Potiretama': 'AIS 18', 'Quixeré': 'AIS 18', 'Russas': 'AIS 18', 'São João do Jaguaribe': 'AIS 18', 'Tabuleiro do Norte': 'AIS 18','Jaguaribara': 'AIS 18',
         'Abaiara': 'AIS 19', 'Altaneira': 'AIS 19', 'Antonina do Norte': 'AIS 19', 'Araripe': 'AIS 19', 'Assaré': 'AIS 19', 'Aurora': 'AIS 19', 'Barbalha': 'AIS 19', 'Barro': 'AIS 19', 'Brejo Santo': 'AIS 19', 'Campos Sales': 'AIS 19', 'Caririaçu': 'AIS 19', 'Crato': 'AIS 19', 'Farias Brito': 'AIS 19', 'Jardim': 'AIS 19', 'Jati': 'AIS 19', 'Juazeiro do Norte': 'AIS 19', 'Mauriti': 'AIS 19', 'Milagres': 'AIS 19', 'Missão Velha': 'AIS 19', 'Nova Olinda': 'AIS 19', 'Penaforte': 'AIS 19', 'Porteiras': 'AIS 19', 'Potengi': 'AIS 19', 'Salitre': 'AIS 19', 'Santana do Cariri': 'AIS 19',
         'Banabuiú': 'AIS 20', 'Choró': 'AIS 20', 'Deputado Irapuan Pinheiro': 'AIS 20', 'Ibaretama': 'AIS 20', 'Ibicuitinga': 'AIS 20', 'Jaguaretama': 'AIS 20', 'Milhã': 'AIS 20', 'Morada Nova': 'AIS 20', 'Pedra Branca': 'AIS 20', 'Quixadá': 'AIS 20', 'Quixeramobim': 'AIS 20', 'Senador Pompeu': 'AIS 20', 'Solonópole': 'AIS 20',
         'Acopiara': 'AIS 21', 'Baixio': 'AIS 21', 'Cariús': 'AIS 21', 'Cedro': 'AIS 21', 'Granjeiro': 'AIS 21', 'Icó': 'AIS 21', 'Iguatu': 'AIS 21', 'Ipaumirim': 'AIS 21', 'Jucás': 'AIS 21', 'Lavras da Mangabeira': 'AIS 21', 'Orós': 'AIS 21', 'Quixelô': 'AIS 21', 'Saboeiro': 'AIS 21', 'Tarrafas': 'AIS 21', 'Umari': 'AIS 21', 'Várzea Alegre': 'AIS 21',
@@ -182,47 +181,51 @@ def executar_analise_geografica(df_crimes):
     mapa_data_ais = gdf_ais.merge(dados_ais, on='AIS', how='left')
     mapa_data_ais[['QUANTIDADE', 'TAXA_POR_100K']] = mapa_data_ais[['QUANTIDADE', 'TAXA_POR_100K']].fillna(0)
 
-    # 4. Criação do Mapa Interativo (ESTRUTURA CORRIGIDA)
-    print("Criando o mapa interativo com Folium...")
-    mapa = folium.Map(location=[-5.0, -39.5], zoom_start=7, tiles='CartoDB positron')
+    # 4. Criação dos Mapas Interativos (ESTRUTURA SIMPLIFICADA)
+    print("Criando os mapas interativos...")
     lista_de_crimes = sorted(df_crimes['NATUREZA'].dropna().unique().tolist())
 
-    # Cria grupos de camadas para o seletor
-    grupo_municipios = folium.FeatureGroup(name='Visualização por Município', show=True).add_to(mapa)
-    grupo_ais = folium.FeatureGroup(name='Visualização por AIS', show=False).add_to(mapa)
-
+    # --- MAPA 1: MUNICÍPIOS ---
+    mapa_municipios = folium.Map(location=[-5.0, -39.5], zoom_start=7, tiles='CartoDB positron')
     for crime in lista_de_crimes:
-        # Camada de Municípios
-        camada_municipio = folium.Choropleth(
+        camada_choropleth = folium.Choropleth(
             geo_data=mapa_data_municipios[mapa_data_municipios['NATUREZA'] == crime],
+            name=crime,
             data=mapa_data_municipios[mapa_data_municipios['NATUREZA'] == crime],
             columns=['NM_MUN_NORM', 'TAXA_POR_100K'],
             key_on='feature.properties.NM_MUN_NORM',
             fill_color='YlOrRd',
             legend_name=f'Taxa de {crime} por 100k (Municípios)',
-            highlight=True
+            highlight=True,
+            show=(crime == lista_de_crimes[0]) # Mostra a primeira camada por padrão
         )
-        folium.GeoJsonTooltip(['name', 'QUANTIDADE', 'TAXA_POR_100K'], aliases=['Município:', 'Nº Absoluto:', 'Taxa/100k:']).add_to(camada_municipio.geojson)
-        camada_municipio.add_to(grupo_municipios)
+        folium.GeoJsonTooltip(['name', 'QUANTIDADE', 'TAXA_POR_100K'], aliases=['Município:', 'Nº Absoluto:', 'Taxa/100k:']).add_to(camada_choropleth.geojson)
+        camada_choropleth.add_to(mapa_municipios)
 
-        # Camada de AIS
-        camada_ais = folium.Choropleth(
+    folium.LayerControl(collapsed=False).add_to(mapa_municipios)
+    mapa_municipios.save("mapa_municipios.html")
+    print("\nSucesso! O arquivo 'mapa_municipios.html' foi criado.")
+
+    # --- MAPA 2: AIS ---
+    mapa_ais = folium.Map(location=[-5.0, -39.5], zoom_start=7, tiles='CartoDB positron')
+    for crime in lista_de_crimes:
+        camada_choropleth = folium.Choropleth(
             geo_data=mapa_data_ais[mapa_data_ais['NATUREZA'] == crime],
+            name=crime,
             data=mapa_data_ais[mapa_data_ais['NATUREZA'] == crime],
             columns=['AIS', 'TAXA_POR_100K'],
             key_on='feature.properties.AIS',
             fill_color='PuBuGn',
             legend_name=f'Taxa de {crime} por 100k (AIS)',
-            highlight=True
+            highlight=True,
+            show=(crime == lista_de_crimes[0])
         )
-        folium.GeoJsonTooltip(['AIS', 'QUANTIDADE', 'TAXA_POR_100K'], aliases=['AIS:', 'Nº Absoluto:', 'Taxa/100k:']).add_to(camada_ais.geojson)
-        camada_ais.add_to(grupo_ais)
+        folium.GeoJsonTooltip(['AIS', 'QUANTIDADE', 'TAXA_POR_100K'], aliases=['AIS:', 'Nº Absoluto:', 'Taxa/100k:']).add_to(camada_choropleth.geojson)
+        camada_choropleth.add_to(mapa_ais)
 
-    folium.LayerControl(collapsed=False).add_to(mapa)
-
-    # 5. Salvando o Mapa
-    mapa.save("mapa_interativo_completo.html")
-    print("\nSucesso! O arquivo 'mapa_interativo_completo.html' foi criado.")
+    folium.LayerControl(collapsed=False).add_to(mapa_ais)
+    mapa_ais.save("mapa_ais.html")
+    print("Sucesso! O arquivo 'mapa_ais.html' foi criado.")
 if __name__ == "__main__":
     try:
         df_crimes_original = pd.read_csv('crimes.csv', sep=',')
