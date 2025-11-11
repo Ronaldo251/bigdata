@@ -16,7 +16,24 @@ try:
     df_crimes = pd.read_csv('crimes.csv', sep=',')
     gdf_municipios_original = gpd.read_file('municipios_ce.geojson')
     df_populacao = pd.read_csv('populacao_ce.csv')
-    df_crimes.columns = ['AIS', 'NATUREZA', 'MUNICIPIO', 'LOCAL', 'DATA', 'HORA', 'DIA_SEMANA','MEIO_EMPREGADO', 'GENERO', 'ORIENTACAO_SEXUAL', 'IDADE_VITIMA','ESCOLARIDADE_VITIMA', 'RACA_VITIMA']
+    
+    # Padronizando nomes de colunas para garantir consistência
+    df_crimes.columns = [col.upper().strip() for col in df_crimes.columns]
+    
+    # Verificação crucial para o heatmap
+    if 'LATITUDE' not in df_crimes.columns or 'LONGITUDE' not in df_crimes.columns:
+        print("\n!!! AVISO CRÍTICO !!!")
+        print("As colunas 'LATITUDE' e 'LONGITUDE' não foram encontradas em 'crimes.csv'.")
+        print("A funcionalidade de Mapa de Calor (Heatmap) não será possível.")
+        print("Continuando sem a funcionalidade de heatmap...\n")
+        HAS_COORDINATES = False
+    else:
+        # Limpeza de coordenadas inválidas
+        df_crimes.dropna(subset=['LATITUDE', 'LONGITUDE'], inplace=True)
+        df_crimes = df_crimes[pd.to_numeric(df_crimes['LATITUDE'], errors='coerce').notna()]
+        df_crimes = df_crimes[pd.to_numeric(df_crimes['LONGITUDE'], errors='coerce').notna()]
+        HAS_COORDINATES = True
+
 except FileNotFoundError as e:
     print(f"ERRO CRÍTICO: Arquivo não encontrado - {e}.")
     exit()
@@ -27,8 +44,8 @@ def normalize_text(text_series):
 df_crimes['DATA'] = pd.to_datetime(df_crimes['DATA'], dayfirst=True, errors='coerce')
 df_crimes['ANO'] = df_crimes['DATA'].dt.year
 df_crimes['MES'] = df_crimes['DATA'].dt.month
-mapeamento_genero = {'Masculino': 'Masculino', 'Homem Trans': 'Masculino', 'Feminino': 'Feminino', 'Mulher Trans': 'Feminino', 'Travesti': 'Feminino'}
-df_crimes['GENERO_AGRUPADO'] = df_crimes['GENERO'].map(mapeamento_genero)
+mapeamento_genero = {'MASCULINO': 'Masculino', 'HOMEM TRANS': 'Masculino', 'FEMININO': 'Feminino', 'MULHER TRANS': 'Feminino', 'TRAVESTI': 'Feminino'}
+df_crimes['GENERO_AGRUPADO'] = df_crimes['GENERO'].str.upper().map(mapeamento_genero)
 df_crimes['MUNICIPIO_NORM'] = normalize_text(df_crimes['MUNICIPIO'])
 gdf_municipios = gdf_municipios_original.copy()
 gdf_municipios['NM_MUN_NORM'] = normalize_text(gdf_municipios['name'])
@@ -75,6 +92,22 @@ def get_filtered_df():
 @app.route('/')
 def index():
     return render_template('index.html', crimes=LISTA_DE_CRIMES)
+
+@app.route('/api/heatmap_data/<crime_type>')
+def get_heatmap_data(crime_type):
+    if not HAS_COORDINATES:
+        return jsonify([]) # Retorna lista vazia se não houver coordenadas
+
+    # Filtra os crimes pelo tipo selecionado
+    df_filtrado = df_crimes[df_crimes['NATUREZA'] == crime_type]
+    
+    # Seleciona apenas as colunas de latitude e longitude e remove quaisquer nulos restantes
+    coords = df_filtrado[['LATITUDE', 'LONGITUDE']].dropna()
+    
+    # Converte para uma lista de listas, que é o formato que o Leaflet.heat espera
+    points = coords.values.tolist()
+    
+    return jsonify(points)
 
 @app.route('/api/municipality_map_data/<crime_type>')
 def get_municipality_map_data(crime_type):
