@@ -1,9 +1,9 @@
-<!-- templates/index.html (Versão COMPLETA com Gráficos 6a e 6b) -->
+<!-- templates/index.html (Versão com Zoom Padrão 8) -->
 
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Visualização Geográfica de Crimes - Ceará</title>
+    <title>Dashboard de Análise Criminal - Ceará</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
@@ -17,11 +17,11 @@
 
     <style>
         :root {
-            --sidebar-width: 300px; --sidebar-bg: #2c3e50; --sidebar-text-color: #ecf0f1;
+            --sidebar-width: 320px; --sidebar-bg: #2c3e50; --sidebar-text-color: #ecf0f1;
             --sidebar-header-bg: #34495e; --accent-color: #3498db;
         }
         html, body { height: 100%; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
-        #map { width: 100%; height: 100%; transition: margin-left 0.3s; }
+        #map { width: 100%; height: 100%; transition: margin-left 0.3s; background-color: #f0f0f0; }
         .sidebar {
             height: 100%; width: var(--sidebar-width ); position: fixed; z-index: 1001; top: 0; left: 0;
             background-color: var(--sidebar-bg); overflow-y: auto; transition: transform 0.3s; padding-top: 20px;
@@ -41,11 +41,29 @@
             font-size: 16px; transition: 0.4s; display: block;
         }
         .accordion:hover, .accordion.active { background-color: var(--accent-color); }
-        .accordion::after { content: '\\25B6'; font-size: 13px; color: var(--sidebar-text-color); float: right; margin-left: 5px; transition: transform 0.3s; }
+        .accordion::after { content: '\25B6'; font-size: 13px; color: var(--sidebar-text-color); float: right; margin-left: 5px; transition: transform 0.3s; }
         .accordion.active::after { transform: rotate(90deg); }
-        .panel { padding: 0 18px; background-color: var(--sidebar-bg); max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        
+        .panel, .sub-panel {
+            display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s ease-out; overflow: hidden;
+        }
+        .panel.open, .sub-panel.open { grid-template-rows: 1fr; }
+        .panel-content, .sub-panel-content { min-height: 0; padding: 0 18px; }
+        .panel.open { margin-bottom: 5px; }
+
+        .sub-accordion {
+            color: var(--sidebar-text-color); cursor: pointer; font-weight: bold; padding: 10px 0; width: 100%; display: block;
+        }
+        .sub-accordion::after { content: '\25B6'; font-size: 12px; float: right; transition: transform 0.3s; }
+        .sub-accordion.active::after { transform: rotate(90deg); }
+        
         .panel label, .panel span { color: var(--sidebar-text-color); display: block; margin-top: 15px; margin-bottom: 5px; }
-        .panel select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+        .panel select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
+        
+        #municipio-search {
+            width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;
+        }
+
         .checkbox-list { list-style: none; padding: 0; margin: 10px 0; }
         .checkbox-list li { margin-bottom: 10px; }
         .checkbox-list input { margin-right: 10px; }
@@ -57,52 +75,104 @@
         .chart-popup-header { padding: 10px; cursor: move; background-color: #f1f1f1; color: #333; border-bottom: 1px solid #ddd; border-top-left-radius: 8px; border-top-right-radius: 8px; }
         .chart-popup-header .close-btn { float: right; cursor: pointer; font-weight: bold; }
         .chart-popup-content { padding: 15px; height: calc(100% - 45px); }
-        .sub-panel { border-left: 3px solid var(--accent-color); margin-left: 10px; padding-left: 10px; margin-top: 10px; }
+        .map-view-selector { display: flex; justify-content: space-around; padding: 10px; background-color: #34495e; }
+        .map-view-selector label { color: white; }
+        
+        .ui-autocomplete {
+            z-index: 1003 !important;
+        }
     </style>
 </head>
 <body>
 
     <button class="open-btn" onclick="toggleNav()">&#9776;</button>
     <div id="mySidebar" class="sidebar">
-        <h2 style="color: white; text-align: center; margin-bottom: 20px;">Análise Criminal</h2>
+        <h2 style="color: white; text-align: center; margin-bottom: 20px;">Dashboard Criminal</h2>
+        
+        <div style="padding: 0 18px 15px 18px;">
+            <label for="municipio-search" style="color: white; margin-bottom: 5px; display: block;">Buscar Município:</label>
+            <input type="text" id="municipio-search" placeholder="Digite o nome do município...">
+        </div>
+
         <button class="accordion">Filtros de Mapa</button>
         <div class="panel">
-            <label for="crime-select">Selecione o Tipo de Crime:</label>
-            <select id="crime-select">
-                {% for crime in crimes %}
-                    <option value="{{ crime }}">{{ crime }}</option>
-                {% endfor %}
-            </select>
+            <div class="panel-content">
+                <div class="map-view-selector">
+                    <label><input type="radio" name="mapView" value="municipality" checked> Municípios</label>
+                    <label><input type="radio" name="mapView" value="ais"> AIS</label>
+                </div>
+                <label for="crime-select" style="margin-top: 15px;">Selecione o Tipo de Crime:</label>
+                <select id="crime-select">
+                    {% set crime_list = ['HOMICIDIO DOLOSO'] + (crimes | reject('equalto', 'HOMICIDIO DOLOSO') | list) %}
+                    {% for crime in crime_list %}
+                        <option value="{{ crime }}">{{ crime }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         </div>
         <button class="accordion">Visualizar Gráficos</button>
         <div class="panel">
-            <span><b>Crimes Gerais</b></span>
-            <ul class="checkbox-list">
-                <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="evolucao_anual" data-chart-title="Evolução Anual de Crimes por Gênero" data-chart-type="line"> Evolução Anual por Gênero</label></li>
-                <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="comparativo_crime_log" data-chart-title="Quantidade de Vítimas por Tipo de Crime" data-chart-type="bar"> Quantidade por Tipo de Crime</label></li>
-                <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="proporcao_genero_crime" data-chart-title="Proporção de Gênero por Tipo de Crime" data-chart-type="bar" data-chart-stacked="true" data-chart-axis="y"> Proporção de Gênero por Crime</label></li>
-                <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="distribuicao_raca" data-chart-title="Distribuição de Vítimas por Raça/Cor" data-chart-type="bar"> Distribuição por Raça/Cor</label></li>
-                <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="distribuicao_etaria" data-chart-title="Distribuição de Vítimas por Faixa Etária" data-chart-type="bar"> Distribuição por Faixa Etária</label></li>
-                <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="comparativo_idade_genero" data-chart-title="Comparativo de Idade por Gênero" data-chart-type="line"> Comparativo de Idade por Gênero</label></li>
-            </ul>
-            <hr style="border-color: #444;">
-            <span><b>Crimes Contra a Mulher</b></span>
-            <ul class="checkbox-list">
-                <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="crimes_mulher_dia_hora" data-chart-title="Crimes Contra Mulheres por Dia e Hora" data-chart-type="line"> Crimes por Dia e Hora</label></li>
-            </ul>
-            <hr style="border-color: #444;">
-            <!-- NOVA SEÇÃO PARA GRÁFICOS DE MEIO EMPREGADO -->
-            <span><b>Análise por Meio Empregado</b></span>
-            <div class="sub-panel">
-                <label for="meio-empregado-filter">Filtrar por Gênero:</label>
-                <select id="meio-empregado-filter">
-                    <option value="todos">Todos os Registros</option>
-                    <option value="feminino">Apenas Vítimas Femininas</option>
-                </select>
-                <ul class="checkbox-list" style="margin-top: 15px;">
-                    <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="proporcao_meio_empregado" data-chart-title="Proporção do Meio Empregado" data-chart-type="pie" data-requires-filter="meio-empregado-filter"> Proporção (Pizza)</label></li>
-                    <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="evolucao_meio_empregado" data-chart-title="Evolução do Meio Empregado" data-chart-type="line" data-requires-filter="meio-empregado-filter"> Evolução Temporal (Linhas)</label></li>
-                </ul>
+            <div class="panel-content">
+                <span class="sub-accordion">Crimes Gerais</span>
+                <div class="sub-panel">
+                    <div class="sub-panel-content">
+                        <ul class="checkbox-list">
+                            <li>
+                                <label><input type="checkbox" class="chart-checkbox" data-chart-id="evolucao_anual" data-chart-title="Evolução Anual de Crimes por Gênero" data-chart-type="line"> Evolução Anual por Gênero</label>
+                                <div class="sub-panel-item-content">
+                                    <label for="evolucao-anual-predict" style="font-size: 12px;">Previsão Futura:</label>
+                                    <select id="evolucao-anual-predict" class="chart-filter" data-target-chart="evolucao_anual">
+                                        <option value="0">Sem Previsão</option>
+                                        <option value="1">Prever 1 Ano</option>
+                                        <option value="5">Prever 5 Anos</option>
+                                        <option value="10">Prever 10 Anos</option>
+                                    </select>
+                                </div>
+                            </li>
+                            <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="comparativo_crime_log" data-chart-title="Quantidade de Vítimas por Tipo de Crime" data-chart-type="bar"> Quantidade por Tipo de Crime</label></li>
+                            <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="proporcao_genero_crime" data-chart-title="Proporção de Gênero por Tipo de Crime" data-chart-type="bar" data-chart-stacked="true" data-chart-axis="y"> Proporção de Gênero por Crime</label></li>
+                            <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="distribuicao_raca" data-chart-title="Distribuição de Vítimas por Raça/Cor" data-chart-type="bar"> Distribuição por Raça/Cor</label></li>
+                            <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="densidade_etaria" data-chart-title="Distribuição de Densidade Etária das Vítimas" data-chart-type="line"> Distribuição de Densidade Etária</label></li>
+                            <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="comparativo_idade_genero" data-chart-title="Comparativo de Idade por Gênero" data-chart-type="line"> Comparativo de Idade por Gênero</label></li>
+                        </ul>
+                    </div>
+                </div>
+                <hr style="border-color: #444;">
+                <span class="sub-accordion">Crimes Contra a Mulher</span>
+                <div class="sub-panel">
+                    <div class="sub-panel-content">
+                        <ul class="checkbox-list">
+                            <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="crimes_mulher_dia_hora" data-chart-title="Crimes Contra Mulheres por Dia e Hora" data-chart-type="line"> Crimes por Dia e Hora</label></li>
+                            <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="distribuicao_raca_fem" data-chart-api-id="distribuicao_raca" data-gender-filter="feminino" data-chart-title="Distribuição por Raça/Cor (Vítimas Mulheres)" data-chart-type="bar"> Distribuição por Raça/Cor</label></li>
+                            <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="densidade_etaria_fem" data-chart-api-id="densidade_etaria" data-gender-filter="feminino" data-chart-title="Distribuição de Densidade Etária (Vítimas Mulheres)" data-chart-type="line"> Distribuição de Densidade Etária</label></li>
+                        </ul>
+                    </div>
+                </div>
+                <hr style="border-color: #444;">
+                <span class="sub-accordion">Análise por Meio Empregado</span>
+                <div class="sub-panel">
+                    <div class="sub-panel-content">
+                        <label for="meio-empregado-filter">Filtrar por Gênero:</label>
+                        <select id="meio-empregado-filter" class="chart-filter" data-target-chart="proporcao_meio_empregado,evolucao_meio_empregado">
+                            <option value="todos">Todos os Registros</option>
+                            <option value="feminino">Apenas Vítimas Femininas</option>
+                        </select>
+                        <ul class="checkbox-list" style="margin-top: 15px;">
+                            <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="proporcao_meio_empregado" data-chart-title="Proporção do Meio Empregado" data-chart-type="pie"> Proporção (Pizza)</label></li>
+                            <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="evolucao_meio_empregado" data-chart-title="Evolução do Meio Empregado" data-chart-type="line"> Evolução Temporal (Linhas)</label></li>
+                        </ul>
+                    </div>
+                </div>
+                <hr style="border-color: #444;">
+                <span class="sub-accordion">Análise de Crimes de Ódio</span>
+                <div class="sub-panel">
+                    <div class="sub-panel-content">
+                        <ul class="checkbox-list">
+                            <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="evolucao_odio" data-chart-title="Evolução Anual dos Crimes de Ódio" data-chart-type="line"> Evolução Anual</label></li>
+                            <li><label><input type="checkbox" class="chart-checkbox" data-chart-id="perfil_orientacao_sexual" data-chart-title="Perfil de Orientação Sexual (Vítimas de LGBTfobia)" data-chart-type="bar"> Perfil de Orientação Sexual</label></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -128,66 +198,66 @@
         sidebar.classList.add("open");
         mapContainer.classList.add("sidebar-open");
         openBtn.classList.add("shifted");
-        const accordions = document.getElementsByClassName("accordion");
-        for (let i = 0; i < accordions.length; i++) {
-            accordions[i].addEventListener("click", function() {
-                this.classList.toggle("active");
-                const panel = this.nextElementSibling;
-                panel.style.maxHeight = panel.style.maxHeight ? null : panel.scrollHeight + "px";
+
+        function setupAccordion(selector) {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => {
+                el.addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    const panel = this.nextElementSibling;
+                    panel.classList.toggle('open');
+                });
             });
         }
+        setupAccordion('.accordion');
+        setupAccordion('.sub-accordion');
 
-        // --- LÓGICA DOS GRÁFICOS (ATUALIZADA PARA LIDAR COM FILTROS) ---
+        // --- LÓGICA DOS GRÁFICOS (sem alterações) ---
         Chart.register(ChartDataLabels);
         const activeCharts = {};
         $('.chart-checkbox').on('change', function() {
             const chartId = $(this).data('chart-id');
-            const chartTitle = $(this).data('chart-title');
-            const chartType = $(this).data('chart-type') || 'line';
-            const isStacked = $(this).data('chart-stacked') || false;
-            const mainAxis = $(this).data('chart-axis') || 'x';
-            const filterId = $(this).data('requires-filter');
-
-            if (this.checked) {
-                createChartPopup(chartId, chartTitle, chartType, isStacked, mainAxis, filterId);
-            } else {
-                destroyChartPopup(chartId);
-            }
+            if (this.checked) { createChartPopup(chartId); } else { destroyChartPopup(chartId); }
         });
-
-        // Adiciona um listener para o novo filtro
-        $('#meio-empregado-filter').on('change', function() {
-            // Para cada gráfico de "meio empregado" que estiver ativo, atualize-o
-            $('input[data-requires-filter="meio-empregado-filter"]:checked').each(function() {
-                const chartId = $(this).data('chart-id');
-                destroyChartPopup(chartId); // Fecha o antigo
-                // Re-marca e dispara o evento para recriar o gráfico com o novo filtro
-                $(this).prop('checked', true).trigger('change');
+        $('.chart-filter').on('change', function() {
+            const targetCharts = $(this).data('target-chart').split(',');
+            targetCharts.forEach(chartId => {
+                if ($(`input[data-chart-id="${chartId}"]`).is(':checked')) {
+                    destroyChartPopup(chartId);
+                    createChartPopup(chartId);
+                }
             });
         });
-
-        async function createChartPopup(chartId, chartTitle, chartType, isStacked, mainAxis, filterId) {
-            const $popup = $('#chart-popup-template .chart-popup').clone().attr('id', 'popup-' + chartId);
-            
+        async function createChartPopup(chartId) {
+            const $checkbox = $(`input[data-chart-id="${chartId}"]`);
+            const chartApiId = $checkbox.data('chart-api-id') || chartId;
+            const chartTitle = $checkbox.data('chart-title');
+            const chartType = $checkbox.data('chart-type') || 'line';
+            const isStacked = $checkbox.data('chart-stacked') || false;
+            const mainAxis = $checkbox.data('chart-axis') || 'x';
+            const genderFilter = $checkbox.data('gender-filter');
             let finalChartTitle = chartTitle;
-            let apiUrl = `/api/data/grafico_${chartId}`;
-
-            // Se o gráfico requer um filtro, pega o valor e adiciona à URL e ao título
-            if (filterId) {
-                const filterValue = $(`#${filterId}`).val();
-                apiUrl += `?filtro=${filterValue}`;
-                const filterText = $(`#${filterId} option:selected`).text();
-                finalChartTitle += ` (${filterText})`;
-            }
-            
+            let apiUrl = `/api/data/grafico_${chartApiId}`;
+            let queryParams = [];
+            if (genderFilter) { queryParams.push(`genero=${genderFilter}`); }
+            $(`.chart-filter`).each(function() {
+                const targets = $(this).data('target-chart').split(',');
+                if (targets.includes(chartId) || targets.includes(chartApiId)) {
+                    const filterValue = $(this).val();
+                    const filterKey = this.id.includes('predict') ? 'predict' : 'filtro';
+                    if (filterValue !== "0" || filterKey === 'filtro') { queryParams.push(`${filterKey}=${filterValue}`); }
+                    if (filterKey === 'filtro') { finalChartTitle += ` (${$(this).find('option:selected').text()})`; }
+                }
+            });
+            if (queryParams.length > 0) { apiUrl += `?${queryParams.join('&')}`; }
+            const $popup = $('#chart-popup-template .chart-popup').clone().attr('id', 'popup-' + chartId);
             $popup.find('.title').text(finalChartTitle);
             $('body').append($popup);
             $popup.draggable({ handle: ".chart-popup-header" }).resizable();
             $popup.find('.close-btn').on('click', function() {
-                $(`.chart-checkbox[data-chart-id="${chartId}"]`).prop('checked', false);
+                $checkbox.prop('checked', false);
                 destroyChartPopup(chartId);
             });
-
             try {
                 const response = await fetch(apiUrl);
                 const chartData = await response.json();
@@ -198,19 +268,15 @@
                     plugins: {
                         legend: { display: chartData.datasets.length > 1 && chartType !== 'pie' },
                         datalabels: {
-                            // Para pizza, mostra a porcentagem
                             formatter: (value, ctx) => {
                                 if (chartType === 'pie') {
-                                    let sum = 0;
-                                    let dataArr = ctx.chart.data.datasets[0].data;
-                                    dataArr.map(data => { sum += data; });
-                                    let percentage = (value*100 / sum).toFixed(1)+"%";
-                                    return percentage;
+                                    let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                    if (sum === 0) return '0%';
+                                    return (value * 100 / sum).toFixed(1) + "%";
                                 }
                                 return Math.round(value);
                             },
-                            color: '#fff',
-                            font: { weight: 'bold' }
+                            color: '#fff', font: { weight: 'bold' }
                         },
                         tooltip: {
                             callbacks: {
@@ -225,37 +291,150 @@
                         }
                     }
                 };
-                if (chartId === 'comparativo_crime_log') { chartOptions.scales.y.type = 'logarithmic'; }
+                if (chartApiId === 'comparativo_crime_log') { chartOptions.scales.y.type = 'logarithmic'; }
                 if (isStacked && mainAxis === 'y') { chartOptions.scales.x.max = 100; }
-                if (!['proporcao_genero_crime'].includes(chartId)) {
+                if (!['proporcao_genero_crime'].includes(chartApiId) && chartType !== 'pie') {
                     chartOptions.plugins.datalabels.display = false;
                 }
-
+                if (chartType === 'line') {
+                    chartData.datasets.forEach(dataset => {
+                        dataset.pointRadius = 0;
+                        dataset.borderWidth = 2;
+                    });
+                }
                 activeCharts[chartId] = new Chart(ctx, { type: chartType, data: chartData, options: chartOptions });
                 $popup.show();
-            } catch (error) {
-                console.error("Erro ao buscar dados do gráfico:", error);
-                $popup.remove();
-            }
+            } catch (error) { console.error("Erro ao buscar dados do gráfico:", error); $popup.remove(); }
         }
         function destroyChartPopup(chartId) {
             if (activeCharts[chartId]) { activeCharts[chartId].destroy(); delete activeCharts[chartId]; }
             $('#popup-' + chartId).remove();
         }
 
-        // --- LÓGICA DO MAPA (sem alterações) ---
+        // --- LÓGICA DO MAPA (COM NOVO PADRÃO DE ZOOM) ---
         try {
-            const map = L.map('map', { center: [-5.2, -39.5], zoom: 7, minZoom: 7 });
+            // MUDANÇA 1: Alterando o zoom inicial e mínimo para 8
+            const map = L.map('map', { 
+                center: [-5.2, -39.5], 
+                zoom: 8, 
+                minZoom: 8, 
+                zoomControl: false,
+                doubleClickZoom: false 
+            });
+
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>' } ).addTo(map);
+            
             let geojsonLayer;
+            let highlightedLayer = null;
+            const highlightStyle = { weight: 3, color: '#00ffff', opacity: 1 };
+
+            // MUDANÇA 2: Iniciando o ciclo de zoom em 8
+            let currentZoomStep = 8;
+
             function getColor(t,m){const n=Number(t);if(isNaN(n)||n<=0)return'#E5E5E5';if(m===0)return'#ffffb2';const o=['#ffffb2','#fed976','#feb24c','#fd8d3c','#f03b20','#bd0026'];if(n>m*0.8)return o[5];if(n>m*0.6)return o[4];if(n>m*0.4)return o[3];if(n>m*0.2)return o[2];if(n>m*0.05)return o[1];return o[0]}
-            function style(f,m){const t=f.properties.TAXA_POR_100K;return{fillColor:getColor(t,m),weight:1,opacity:1,color:'black',fillOpacity:0.8}}
-            async function updateMap(c){if(geojsonLayer)map.removeLayer(geojsonLayer);try{const r=await fetch(`/api/map_data/${c}`);const d=await r.json();const g=d.geojson;const m=d.max_taxa;geojsonLayer=L.geoJson(g,{style:(f)=>style(f,m),onEachFeature:function(f,l){const p=f.properties;const n=p.name||"Nome indisponível";const q=Number(p.QUANTIDADE);const t=Number(p.TAXA_POR_100K);const o=`<h4>${n}</h4><b>Nº Absoluto:</b> ${!isNaN(q)?q.toFixed(0):'N/A'}  
-<b>Taxa/100k:</b> ${!isNaN(t)?t.toFixed(2):'N/A'}`;l.bindPopup(o)}}).addTo(map)}catch(e){console.error('ERRO DENTRO DO updateMap:',e)}}
-            const crimeSelect=document.getElementById('crime-select');crimeSelect.addEventListener('change',(e)=>{updateMap(e.target.value)});
-            $('.accordion').click();
-            setTimeout(()=>map.invalidateSize(),400);
-            updateMap(crimeSelect.value);
+            
+            function getFeatureStyle(feature, max_taxa) {
+                const taxa = feature.properties.TAXA_POR_100K;
+                return {
+                    fillColor: getColor(taxa, max_taxa),
+                    weight: 1,
+                    opacity: 1,
+                    color: 'black',
+                    fillOpacity: 0.8
+                };
+            }
+            
+            function applyHighlight(layer) {
+                if (highlightedLayer) {
+                    geojsonLayer.resetStyle(highlightedLayer);
+                }
+                highlightedLayer = layer;
+                layer.setStyle(highlightStyle);
+                layer.bringToFront();
+            }
+
+            function removeHighlight() {
+                if (highlightedLayer) {
+                    geojsonLayer.resetStyle(highlightedLayer);
+                    highlightedLayer = null;
+                }
+            }
+
+            async function updateMap() {
+                if (geojsonLayer) map.removeLayer(geojsonLayer);
+                removeHighlight();
+                const crimeType = $('#crime-select').val();
+                const mapView = $('input[name="mapView"]:checked').val();
+                const apiUrl = `/api/${mapView}_map_data/${crimeType}`;
+                try {
+                    const response = await fetch(apiUrl);
+                    const data = await response.json();
+                    const geojsonData = data.geojson;
+                    const max_taxa = data.max_taxa;
+                    geojsonLayer = L.geoJson(geojsonData, {
+                        style: (feature) => getFeatureStyle(feature, max_taxa),
+                        onEachFeature: function (feature, layer) {
+                            const props = feature.properties;
+                            const id_prop = mapView === 'ais' ? 'AIS' : 'name';
+                            const name = props[id_prop] || "N/A";
+                            const popupContent = `<h4>${name}</h4><b>Nº Absoluto:</b> ${Number(props.QUANTIDADE || 0).toFixed(0)}  
+<b>Taxa/100k:</b> ${Number(props.TAXA_POR_100K || 0).toFixed(2)}`;
+                            layer.bindPopup(popupContent);
+
+                            layer.on('click', function(e) {
+                                L.DomEvent.stopPropagation(e);
+                                applyHighlight(layer);
+                            });
+                        }
+                    }).addTo(map);
+                } catch (error) { console.error('ERRO DENTRO DO updateMap:', error); }
+            }
+            $('#crime-select, input[name="mapView"]').on('change', updateMap);
+            map.on('click', removeHighlight);
+
+            map.on('dblclick', function() {
+                currentZoomStep++;
+                if (currentZoomStep > 11) {
+                    // MUDANÇA 3: Volta para o início do ciclo em 8
+                    currentZoomStep = 8; 
+                }
+                map.setZoom(currentZoomStep);
+            });
+
+            map.on('zoomend', function() {
+                const currentMapZoom = map.getZoom();
+                // MUDANÇA 4: Ajusta o range do ciclo
+                if (currentMapZoom >= 8 && currentMapZoom <= 11) {
+                    currentZoomStep = currentMapZoom;
+                } else {
+                    currentZoomStep = map.getZoom(); 
+                }
+            });
+
+            $.getJSON('/api/municipalities', function(data) {
+                const municipalities = data.map(m => ({ label: m.name, value: m.name, lat: m.lat, lon: m.lon }));
+                $("#municipio-search").autocomplete({
+                    source: municipalities,
+                    select: function(event, ui) {
+                        const mun = ui.item;
+                        map.flyTo([mun.lat, mun.lon], 11);
+                        
+                        geojsonLayer.eachLayer(function(layer) {
+                            if (layer.feature.properties.name === mun.value) {
+                                applyHighlight(layer);
+                            }
+                        });
+                        
+                        $("#municipio-search").val('');
+                        return false;
+                    }
+                });
+            });
+
+            document.querySelectorAll('.accordion').forEach(acc => { acc.click(); });
+            setTimeout(() => map.invalidateSize(), 400);
+            updateMap();
         } catch (e) { console.error("ERRO FATAL NA INICIALIZAÇÃO DO SCRIPT:", e); }
     </script>
 
