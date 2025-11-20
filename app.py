@@ -430,7 +430,38 @@ def get_data_grafico_proporcao_meio_empregado_homicidios():
         'labels': contagem_meio.index.tolist(),
         'datasets': [{'label': 'Meio Empregado', 'data': contagem_meio.values.tolist(), 'backgroundColor': ['#c70039', '#f94c10', '#f8de22', '#73a2c6', '#3d5a80']}]
     })
+@app.route('/api/data/grafico_comparativo_idade_genero_homicidios')
+def get_data_grafico_comparativo_idade_genero_homicidios():
+    # 1. Pega o DataFrame completo (sem filtro de gênero inicial)
+    df_filtrado = df_crimes_graficos.copy()
+    
+    # 2. Aplica o filtro de homicídios
+    naturezas_homicidio = ['HOMICIDIO DOLOSO', 'FEMINICIDIO', 'LATROCINIO', 'LESAO CORPORAL SEGUIDA DE MORTE']
+    df_homicidios = df_filtrado[df_filtrado['NATUREZA'].isin(naturezas_homicidio)]
 
+    # 3. Limpa os dados de idade e gênero
+    df_idade = get_clean_age_df(df_homicidios) # Reutiliza a função auxiliar
+    df_idade.dropna(subset=['GENERO_AGRUPADO'], inplace=True)
+
+    if df_idade.empty:
+        return jsonify({'labels': [], 'datasets': []})
+
+    # 4. Agrupa por idade e gênero
+    dados_grafico = df_idade.groupby(['IDADE_NUM', 'GENERO_AGRUPADO']).size().unstack(fill_value=0)
+    
+    # Garante que ambas as colunas existam para evitar erros
+    if 'Masculino' not in dados_grafico: dados_grafico['Masculino'] = 0
+    if 'Feminino' not in dados_grafico: dados_grafico['Feminino'] = 0
+    
+    dados_grafico = dados_grafico.reindex(range(111), fill_value=0)
+    
+    return jsonify({
+        'labels': dados_grafico.index.tolist(),
+        'datasets': [
+            {'label': 'Masculino', 'data': dados_grafico['Masculino'].tolist(), 'borderColor': 'rgba(54, 162, 235, 1)', 'backgroundColor': 'rgba(54, 162, 235, 0.5)', 'fill': True, 'tension': 0.4},
+            {'label': 'Feminino', 'data': dados_grafico['Feminino'].tolist(), 'borderColor': 'rgba(255, 99, 132, 1)', 'backgroundColor': 'rgba(255, 99, 132, 0.5)', 'fill': True, 'tension': 0.4}
+        ]
+    })
 # BLOCO FINAL PARA INICIAR O SERVIDOR
 if __name__ == '__main__':
     app.run(debug=True)
